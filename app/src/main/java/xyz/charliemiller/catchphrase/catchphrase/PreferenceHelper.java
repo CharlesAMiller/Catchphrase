@@ -1,14 +1,18 @@
 package xyz.charliemiller.catchphrase.catchphrase;
 
 import android.content.SharedPreferences;
+import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.Set;
 
 /**
  * Created by charlie on 5/4/16.
  */
 public class PreferenceHelper
 {
+    private static final String TAG = "PreferenceHelper";
+
     private static SharedPreferences prefs;
     private static SharedPreferences.Editor prefsWriter;
 
@@ -23,6 +27,8 @@ public class PreferenceHelper
 
     private static final String termLength = "termSize_";
     private static final String termsPrefix = "terms_";
+
+    private static final String settingsKey = "key";
 
     private static final String settingsNumberOfSkips = "skips";
     private static final int defaultNumberOfSkips = 2;
@@ -45,6 +51,10 @@ public class PreferenceHelper
     private static void fillDefaults()
     {
         // You get the idea.
+
+        defaultCategories = new ArrayList<>();
+        defaultTerms = new ArrayList<>();
+
         defaultCategories.add("Misc");
         defaultTerms.add("Keanu Reeves");
         defaultTerms.add("Internet Memes");
@@ -98,19 +108,15 @@ public class PreferenceHelper
     {
         ArrayList<String> toReturn = new ArrayList<String>();
 
-        int numberOfCategories = prefs.getInt(settingNumberOfCategories, 0);
+        Set<String> tempSet = prefs.getStringSet(settingsCategory, null);
 
-        for(int i = 0; i < numberOfCategories; i++)
+        if(tempSet == null)
         {
-            String curCategory = prefs.getString(settingsCategory, null);
-            if(curCategory != null)
-            {
-                toReturn.add(curCategory);
-            }
-            else
-            {
-                throw new Error("Category saved to Preferences as NULL"); // Should be try/catch?
-            }
+            toReturn.addAll(defaultCategories);
+        }
+        else
+        {
+            toReturn.addAll(tempSet);
         }
 
         return toReturn;
@@ -130,24 +136,29 @@ public class PreferenceHelper
     {
         ArrayList<String> toReturn = new ArrayList<String>();
 
-        int numberOfTerms = prefs.getInt(termLength + category, 0);
+        Set<String> tempTerms = prefs.getStringSet(termsPrefix + category, null);
 
-        for(int i = 0; i < numberOfTerms; i++)
+        if(tempTerms != null)
         {
-            String tempKey = termsPrefix + category + i;
-            String curTerm = prefs.getString(tempKey, null);
-
-            if(curTerm != null)
-            {
-                toReturn.add(curTerm);
-            }
-            else
-            {
-                throw new Error("Term saved to Preferences as NULL");
-            }
+            toReturn.addAll(tempTerms);
+        }
+        else
+        {
+            toReturn.addAll(defaultTerms);
         }
 
         return toReturn;
     }
 
+    public static String getKey()
+    {
+        return prefs.getString(settingsKey, null);
+    }
+
+    public static void setKey(String key)
+    {
+        Log.d(TAG, "Key: " + key);
+        prefsWriter.putString(settingsKey, key);
+        prefsWriter.commit();
+    }
 }

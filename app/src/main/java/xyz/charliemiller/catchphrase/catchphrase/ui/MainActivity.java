@@ -6,17 +6,20 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 
 import xyz.charliemiller.catchphrase.catchphrase.CatchphraseGameTimer;
 import xyz.charliemiller.catchphrase.catchphrase.PreferenceHelper;
 import xyz.charliemiller.catchphrase.catchphrase.R;
+import xyz.charliemiller.catchphrase.catchphrase.tasks.GetKeyTask;
 
 /** Catchphrase Game.
  *  Charlie "Porthog" Miller
@@ -24,6 +27,9 @@ import xyz.charliemiller.catchphrase.catchphrase.R;
  */
 public class MainActivity extends AppCompatActivity
 {
+
+    /** */
+    private static final String TAG = "MainActivity";
 
     /** Max number of skips. Retrieved value. */
     private int numberOfSkips;
@@ -77,11 +83,11 @@ public class MainActivity extends AppCompatActivity
             {
                 if(skipsRemaining > 0)
                 {
-                    getNewTerm(curTerms);
+                    getNewTerm();
                     skipsRemaining--;
                     if(mRemainingSkipsText != null)
                     {
-                        mRemainingSkipsText.setText(skipsRemaining);
+//                        mRemainingSkipsText.setText(skipsRemaining);
                     }
                 }
             }
@@ -89,11 +95,9 @@ public class MainActivity extends AppCompatActivity
 
         dialog = new AlertDialog.Builder(this);
         dialog.setView(R.layout.score_dialog);
-        dialog.setPositiveButton("Confirm", new DialogInterface.OnClickListener()
-        {
+        dialog.setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
             @Override
-            public void onClick(DialogInterface dialog, int which)
-            {
+            public void onClick(DialogInterface dialog, int which) {
                 team1Points++;
             }
 
@@ -139,6 +143,12 @@ public class MainActivity extends AppCompatActivity
     {
         PreferenceHelper.setPreferences(getPreferences(MODE_PRIVATE));
 
+        if(PreferenceHelper.getKey() == null)
+        {
+            GetKeyTask task = new GetKeyTask();
+            task.execute(this);
+        }
+
         numberOfSkips = PreferenceHelper.getNumberOfSkips();
         skipsRemaining = numberOfSkips;
 
@@ -151,9 +161,13 @@ public class MainActivity extends AppCompatActivity
         previousTerms = new ArrayList<>();
         curCategories = PreferenceHelper.getCategories();
 
+        curTerms = new ArrayList<>();
+
+        Log.d(TAG, "Getting Categories");
         for(String category : curCategories)
         {
             curTerms.addAll(PreferenceHelper.getTerms(category));
+            Log.d(TAG, "Category: " + category);
         }
 
         gameTimer = new CatchphraseGameTimer(roundTime, 1000, dialog);
@@ -161,20 +175,21 @@ public class MainActivity extends AppCompatActivity
         isPaused = true;
     }
 
-    private void getNewTerm(ArrayList<String> terms)
+    private void getNewTerm()
     {
-        if(terms.size() == previousTerms.size())
+        if(curTerms.size() == previousTerms.size())
             previousTerms.clear();
 
+        Log.d(TAG, "Number of skips: " + skipsRemaining);
         Random rand = new Random();
 
-        int rIndex = rand.nextInt(terms.size());
-        String interimTerm = terms.get(rIndex);
+        int rIndex = rand.nextInt(curTerms.size());
+        String interimTerm = curTerms.get(rIndex);
 
         while(previousTerms.contains(interimTerm))
         {
-            rIndex = rand.nextInt(terms.size());
-            interimTerm = terms.get(rIndex);
+            rIndex = rand.nextInt(curTerms.size());
+            interimTerm = curTerms.get(rIndex);
         }
 
         curTerm = interimTerm;
